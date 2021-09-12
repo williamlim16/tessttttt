@@ -31,7 +31,7 @@ func main() {
 	router.GET("/getPlasticSpaceCount", inDB.GetPlasticSpaceCount)
 	router.GET("/getMetalSpaceCount", inDB.GetMetalSpaceCount)
 	router.GET("/getGlassSpaceCount", inDB.GetGlassSpaceCount)
-	router.POST("/sendTimestamp", inDB.SendTimestamp)
+	router.POST("/sendLog", inDB.SendLog)
 
-	router.Run(":8888")
+	router.Run("localhost:8888")
 }
