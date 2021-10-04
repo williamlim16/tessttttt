@@ -62,3 +62,8 @@ type TrashCapacity struct {
 	Organic_max_height   int
 	Anorganic_max_height int
 }
+
+type TrashLogs struct {
+	Trash_can_id  int
+	Trash_reading []Trash_reading
+}

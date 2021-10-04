@@ -8,6 +8,7 @@ import (
 	"trash-separator/structs"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func (idb *InDB) SendLog(c *gin.Context) {
@@ -150,4 +151,56 @@ func (idb *InDB) GetSingleTrashCanCapacity(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, result)
 
 	}
+}
+
+func (idb *InDB) GetAllTrashCanLogs(c *gin.Context) {
+	var (
+		trashLogs     []structs.TrashLogs
+		trashReadings map[int][]structs.Trash_reading
+		status        string
+		msg           string
+		result        gin.H
+	)
+	trashReadings = map[int][]structs.Trash_reading{}
+	rows, err := idb.DB.Table("trash_reading").Select("*").Rows()
+	if idb.DB.Error == gorm.ErrRecordNotFound {
+		result = gin.H{"status": "success", "msg": "no data"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "internal db error"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var reading structs.Trash_reading
+		idb.DB.ScanRows(rows, &reading)
+
+		if idb.DB.Error != nil {
+			result = gin.H{"status": "error", "msg": "internal db error"}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		trashReadings[reading.Trash_id] = append(trashReadings[reading.Trash_id], reading)
+	}
+
+	for key, val := range trashReadings {
+		var temp structs.TrashLogs
+		temp.Trash_can_id = key
+		temp.Trash_reading = val
+		trashLogs = append(trashLogs, temp)
+	}
+	status = "fetch log ok"
+	msg = "ok"
+	result = gin.H{
+		"status": status,
+		"msg":    msg,
+		"data":   trashLogs,
+	}
+
+	c.JSON(http.StatusOK, result)
+
 }

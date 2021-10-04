@@ -35,5 +35,7 @@ func main() {
 	// Server -> Web
 	router.GET("/node/getCapacity/:trash_can_id", inDB.GetSingleTrashCanCapacity)
 
+	router.GET("/node/getLogs/", inDB.GetAllTrashCanLogs)
+
 	router.Run("localhost:8888")
 }
