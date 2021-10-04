@@ -2,6 +2,8 @@ package structs
 
 import "time"
 
+// Structs according to Database (Snake_case)
+
 type User struct {
 	Id           int
 	Name         string
@@ -49,4 +51,14 @@ type Trash_reading struct {
 	Category   string
 	Type       string
 	Created_at time.Time
+}
+
+// Structs for responses (camelCase)
+
+type TrashCapacity struct {
+	Trash_can_id         int
+	Organic_capacity     int
+	Anorganic_capacity   int
+	Organic_max_height   int
+	Anorganic_max_height int
 }

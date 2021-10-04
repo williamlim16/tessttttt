@@ -28,8 +28,12 @@ func main() {
 
 	router := gin.Default()
 
-	// From Microcontroller to Server
-	router.POST("/sendLog", inDB.SendLog)
+	// Microcontroller -> Server
+	router.POST("/node/sendLog", inDB.SendLog)
+	router.POST("/node/sendCapacity", inDB.SendCapacity)
+
+	// Server -> Web
+	router.GET("/node/getCapacity/:trash_can_id", inDB.GetSingleTrashCanCapacity)
 
 	router.Run("localhost:8888")
 }
