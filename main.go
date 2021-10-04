@@ -28,9 +28,7 @@ func main() {
 
 	router := gin.Default()
 
-	router.GET("/getPlasticSpaceCount", inDB.GetPlasticSpaceCount)
-	router.GET("/getMetalSpaceCount", inDB.GetMetalSpaceCount)
-	router.GET("/getGlassSpaceCount", inDB.GetGlassSpaceCount)
+	// From Microcontroller to Server
 	router.POST("/sendLog", inDB.SendLog)
 
 	router.Run("localhost:8888")

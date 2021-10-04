@@ -10,18 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (idb *InDB) GetPlasticSpaceCount(c *gin.Context) {
-
-}
-
-func (idb *InDB) GetMetalSpaceCount(c *gin.Context) {
-
-}
-
-func (idb *InDB) GetGlassSpaceCount(c *gin.Context) {
-
-}
-
 func (idb *InDB) SendLog(c *gin.Context) {
 	var (
 		result gin.H
@@ -29,28 +17,28 @@ func (idb *InDB) SendLog(c *gin.Context) {
 		msg    string
 	)
 
-	trashType := c.PostForm("type")
 	trashcanID, _ := strconv.Atoi(c.PostForm("trash_can_id"))
+	category := c.PostForm("category")
+	trashType := c.PostForm("type")
 
 	fmt.Println("Trash Type:", trashType)
 
-	insertLog := structs.Logs{
-		Type:         trashType,
-		Trash_can_id: trashcanID,
-		Timestamp:    time.Now().Format("2006-01-02 15:04:05"),
+	insertLog := structs.Trash_reading{
+		Trash_id:   trashcanID,
+		Category:   category,
+		Type:       trashType,
+		Created_at: time.Now(),
 	}
 
-	resultInsertLog := idb.DB.Table("logs").Create(&insertLog)
+	resultInsertLog := idb.DB.Table("trash_reading").Create(&insertLog)
 
 	if resultInsertLog.Error == nil {
 		status = "success"
 		msg = "Log successfully added"
 
 		result = gin.H{
-			"type":         trashType,
-			"trash_can_id": trashcanID,
-			"status":       status,
-			"message":      msg,
+			"status":  status,
+			"message": msg,
 		}
 
 		c.JSON(http.StatusOK, result)
@@ -60,10 +48,8 @@ func (idb *InDB) SendLog(c *gin.Context) {
 		msg = "Log insertion failed"
 
 		result = gin.H{
-			"type":         trashType,
-			"trash_can_id": trashcanID,
-			"status":       status,
-			"message":      msg,
+			"status":  status,
+			"message": msg,
 		}
 
 		c.JSON(http.StatusInternalServerError, result)
