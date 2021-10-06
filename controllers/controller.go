@@ -140,13 +140,9 @@ func (idb *InDB) GetSingleTrashCanCapacity(c *gin.Context) {
 		msg = "Get single trash can capacity successful"
 
 		result = gin.H{
-			"status":               status,
-			"msg":                  msg,
-			"trash_can_id":         trashCapacity.Trash_id,
-			"organic_capacity":     trashCapacity.Organic_capacity,
-			"inorganic_capacity":   trashCapacity.Inorganic_capacity,
-			"organic_max_height":   trashCapacity.Organic_max_height,
-			"inorganic_max_height": trashCapacity.Inorganic_max_height,
+			"status": status,
+			"msg":    msg,
+			"data":   trashCapacity,
 		}
 
 		c.JSON(http.StatusOK, result)
@@ -173,6 +169,7 @@ func (idb *InDB) GetAllTrashCanLogs(c *gin.Context) {
 		msg           string
 		result        gin.H
 	)
+
 	trashReadings = map[int][]structs.Trash_reading{}
 	rows, err := idb.DB.Table("trash_reading").Select("*").Rows()
 	if idb.DB.Error == gorm.ErrRecordNotFound {
