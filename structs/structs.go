@@ -67,3 +67,9 @@ type TrashLogs struct {
 	Trash_can_id  int
 	Trash_reading []Trash_reading
 }
+
+type TrashReading struct {
+	Trash_sorter_name     string
+	Trash_sorter_location string
+	Total                 int
+}

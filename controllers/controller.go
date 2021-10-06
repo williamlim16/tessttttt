@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 	"trash-separator/structs"
+	"trash-separator/util"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -280,5 +281,51 @@ func (idb *InDB) GetSingleTrashCanLogs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+
+}
+
+func (idb *InDB) GetTopTrashCans(c *gin.Context) {
+	var (
+		trashReading []structs.TrashReading
+		status       string
+		msg          string
+		result       gin.H
+	)
+
+	tn := time.Now()
+	year, week := tn.ISOWeek()
+	firstDayOfWeek := util.WeekStart(year, week)
+
+	resultGetTopTrashCans := idb.DB.Table("trash_reading").
+		Select("trash.trash_code AS Trash_sorter_name, trash.location AS Trash_sorter_location, count(*) as Total").
+		Joins("left join trash on trash.id = trash_reading.trash_id").
+		Group("trash.id").
+		Where("trash_reading.created_date BETWEEN ? AND ?", firstDayOfWeek, tn).
+		Order("Total desc").
+		Limit(5).
+		Find(&trashReading)
+
+	if resultGetTopTrashCans.Error == nil {
+		status = "success"
+		msg = "Successfully get current week data"
+
+		result = gin.H{
+			"data":   trashReading,
+			"status": status,
+			"msg":    msg,
+		}
+
+		c.JSON(http.StatusOK, result)
+
+	} else {
+		status = "error"
+		msg = resultGetTopTrashCans.Error.Error()
+		result = gin.H{
+			"status": status,
+			"msg":    msg,
+		}
+
+		c.JSON(http.StatusInternalServerError, result)
+	}
 
 }

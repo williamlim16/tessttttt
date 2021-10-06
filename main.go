@@ -34,6 +34,7 @@ func main() {
 
 	// Server -> Web
 	router.GET("/node/getCapacity/:trash_can_id", inDB.GetSingleTrashCanCapacity)
+	router.GET("/node/getTopTrashCans/", inDB.GetTopTrashCans)
 
 	router.GET("/node/getLogs/", inDB.GetAllTrashCanLogs)
 	router.GET("/node/getLogs/:trash_can_id", inDB.GetSingleTrashCanLogs)
