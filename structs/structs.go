@@ -41,16 +41,16 @@ type Trash_capacity struct {
 	Id                 int
 	Trash_id           int
 	Organic_capacity   int
-	Anorganic_capacity int
+	Inorganic_capacity int
 	Created_at         time.Time
 }
 
 type Trash_reading struct {
-	Id         int
-	Trash_id   int
-	Category   string
-	Type       string
-	Created_at time.Time
+	Id           int
+	Trash_id     int
+	Category     string
+	Type         string
+	Created_date time.Time
 }
 
 // Structs for responses (camelCase)

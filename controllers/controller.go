@@ -18,17 +18,29 @@ func (idb *InDB) SendLog(c *gin.Context) {
 		msg    string
 	)
 
-	trashcanID, _ := strconv.Atoi(c.PostForm("trash_can_id"))
+	trashcanID, err := strconv.Atoi(c.PostForm("trash_can_id"))
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "invalid trash id format"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
 	category := c.PostForm("category")
+	if category != "inorganic" && category != "organic" {
+		result = gin.H{"status": "error", "msg": "invalid trash category"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
 	trashType := c.PostForm("type")
 
 	fmt.Println("Trash Type:", trashType)
 
 	insertLog := structs.Trash_reading{
-		Trash_id:   trashcanID,
-		Category:   category,
-		Type:       trashType,
-		Created_at: time.Now(),
+		Trash_id:     trashcanID,
+		Category:     category,
+		Type:         trashType,
+		Created_date: time.Now(),
 	}
 
 	resultInsertLog := idb.DB.Table("trash_reading").Create(&insertLog)
@@ -69,12 +81,12 @@ func (idb *InDB) SendCapacity(c *gin.Context) {
 
 	trashcanID, _ := strconv.Atoi(c.PostForm("trash_can_id"))
 	organicCapacity, _ := strconv.Atoi(c.PostForm("organic_capacity"))
-	anorganicCapacity, _ := strconv.Atoi(c.PostForm("anorganicCapacity"))
+	inorganicCapacity, _ := strconv.Atoi(c.PostForm("inorganic_capacity"))
 
 	insertCapacity := structs.Trash_capacity{
 		Trash_id:           trashcanID,
 		Organic_capacity:   organicCapacity,
-		Anorganic_capacity: anorganicCapacity,
+		Inorganic_capacity: inorganicCapacity,
 		Created_at:         time.Now(),
 	}
 
@@ -131,9 +143,9 @@ func (idb *InDB) GetSingleTrashCanCapacity(c *gin.Context) {
 			"msg":                  msg,
 			"trash_can_id":         trashCapacity.Trash_id,
 			"organic_capacity":     trashCapacity.Organic_capacity,
-			"anorganic_capacity":   trashCapacity.Inorganic_capacity,
+			"inorganic_capacity":   trashCapacity.Inorganic_capacity,
 			"organic_max_height":   trashCapacity.Organic_max_height,
-			"anorganic_max_height": trashCapacity.Inorganic_max_height,
+			"inorganic_max_height": trashCapacity.Inorganic_max_height,
 		}
 
 		c.JSON(http.StatusOK, result)
