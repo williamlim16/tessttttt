@@ -56,11 +56,11 @@ type Trash_reading struct {
 // Structs for responses (camelCase)
 
 type TrashCapacity struct {
-	Trash_can_id         int
+	Trash_id             int
 	Organic_capacity     int
-	Anorganic_capacity   int
+	Inorganic_capacity   int
 	Organic_max_height   int
-	Anorganic_max_height int
+	Inorganic_max_height int
 }
 
 type TrashLogs struct {

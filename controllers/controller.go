@@ -123,18 +123,17 @@ func (idb *InDB) GetSingleTrashCanCapacity(c *gin.Context) {
 		Find(&trashCapacity)
 
 	if resultGetSingleTrashCapacity.Error == nil {
-
 		status = "success"
 		msg = "Get single trash can capacity successful"
 
 		result = gin.H{
 			"status":               status,
 			"msg":                  msg,
-			"trash_can_id":         trashCapacity.Trash_can_id,
+			"trash_can_id":         trashCapacity.Trash_id,
 			"organic_capacity":     trashCapacity.Organic_capacity,
-			"anorganic_capacity":   trashCapacity.Anorganic_capacity,
+			"anorganic_capacity":   trashCapacity.Inorganic_capacity,
 			"organic_max_height":   trashCapacity.Organic_max_height,
-			"anorganic_max_height": trashCapacity.Anorganic_max_height,
+			"anorganic_max_height": trashCapacity.Inorganic_max_height,
 		}
 
 		c.JSON(http.StatusOK, result)
@@ -193,8 +192,75 @@ func (idb *InDB) GetAllTrashCanLogs(c *gin.Context) {
 		temp.Trash_reading = val
 		trashLogs = append(trashLogs, temp)
 	}
+
 	status = "fetch log ok"
 	msg = "ok"
+	if len(trashLogs) == 0 {
+		msg = "empty logs"
+	}
+	result = gin.H{
+		"status": status,
+		"msg":    msg,
+		"data":   trashLogs,
+	}
+
+	c.JSON(http.StatusOK, result)
+
+}
+
+func (idb *InDB) GetSingleTrashCanLogs(c *gin.Context) {
+	var (
+		trashLogs        structs.TrashLogs
+		trashReadings    []structs.Trash_reading
+		trashCanIDString string
+		trashCanID       int
+		status           string
+		msg              string
+		result           gin.H
+		err              error
+	)
+	trashCanIDString = c.Param("trash_can_id")
+	trashCanID, err = strconv.Atoi(trashCanIDString)
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "invalid trash id format"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	trashReadings = []structs.Trash_reading{}
+	rows, err := idb.DB.Table("trash_reading").Select("*").Where("trash_id = ?", trashCanID).Rows()
+	if idb.DB.Error == gorm.ErrRecordNotFound {
+		result = gin.H{"status": "success", "msg": "no data"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "internal db error"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var reading structs.Trash_reading
+		idb.DB.ScanRows(rows, &reading)
+
+		if idb.DB.Error != nil {
+			result = gin.H{"status": "error", "msg": "internal db error"}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		trashReadings = append(trashReadings, reading)
+	}
+
+	trashLogs.Trash_can_id = trashCanID
+	trashLogs.Trash_reading = trashReadings
+
+	status = "fetch log ok"
+	msg = "ok"
+	if len(trashLogs.Trash_reading) == 0 {
+		msg = "empty logs"
+	}
 	result = gin.H{
 		"status": status,
 		"msg":    msg,

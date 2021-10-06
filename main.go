@@ -36,6 +36,7 @@ func main() {
 	router.GET("/node/getCapacity/:trash_can_id", inDB.GetSingleTrashCanCapacity)
 
 	router.GET("/node/getLogs/", inDB.GetAllTrashCanLogs)
+	router.GET("/node/getLogs/:trash_can_id", inDB.GetSingleTrashCanLogs)
 
 	router.Run("localhost:8888")
 }
