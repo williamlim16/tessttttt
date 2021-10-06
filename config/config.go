@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-redis/redis"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -33,4 +34,24 @@ func DBInit() *gorm.DB {
 	}
 
 	return db
+}
+
+func RedisInit() *redis.Client {
+	var (
+		client   *redis.Client
+		address  string
+		password string
+		database int
+	)
+	address = "localhost:6379"
+	password = ""
+	database = 0
+
+	client = redis.NewClient(&redis.Options{
+		Addr:     address,
+		Password: password,
+		DB:       database,
+	})
+
+	return client
 }

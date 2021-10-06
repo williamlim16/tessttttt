@@ -23,8 +23,9 @@ type InDB struct {
 
 func main() {
 	db := config.DBInit()
+	client := config.RedisInit()
 
-	inDB := &controllers.InDB{DB: db}
+	inDB := &controllers.InDB{DB: db, RedisClient: client}
 
 	router := gin.Default()
 
@@ -38,6 +39,10 @@ func main() {
 
 	router.GET("/node/getLogs/", inDB.GetAllTrashCanLogs)
 	router.GET("/node/getLogs/:trash_can_id", inDB.GetSingleTrashCanLogs)
+
+	// Authentication
+	router.POST("/login", inDB.AuthLogin)
+	router.GET("/", inDB.NotImplemented)
 
 	router.Run("localhost:8888")
 }
