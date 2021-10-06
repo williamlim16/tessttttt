@@ -132,7 +132,7 @@ func (idb *InDB) GetSingleTrashCanCapacity(c *gin.Context) {
 		Joins("left join trash on trash.id = trash_capacity.trash_id").
 		Joins("left join trash_version on trash_version.id = trash.trash_version_id").
 		Where("trash_capacity.trash_id = ?", trashCanID).
-		Find(&trashCapacity)
+		Last(&trashCapacity)
 
 	if resultGetSingleTrashCapacity.Error == nil {
 		status = "success"
