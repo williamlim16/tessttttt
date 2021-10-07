@@ -102,34 +102,44 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 
 func (idb *InDB) AuthRegister(c *gin.Context) {
 	var (
-		userInput   structs.User
-		confirmPass string
+		userInput structs.User
 
 		result gin.H
 	)
 
-	userInput = structs.User{
-		Name:         c.PostForm("name"),
-		Email:        c.PostForm("email"),
-		Telephone:    c.PostForm("telephone"),
-		Address:      c.PostForm("address"),
-		Company_name: c.PostForm("company_name"),
-		Password:     c.PostForm("password"),
+	// userInput = structs.User{
+	// 	Name:         c.PostForm("name"),
+	// 	Email:        c.PostForm("email"),
+	// 	Telephone:    c.PostForm("telephone"),
+	// 	Address:      c.PostForm("address"),
+	// 	Company_name: c.PostForm("company_name"),
+	// 	Password:     c.PostForm("password"),
+	// }
+	// confirmPass = c.PostForm("confirm_password")
+
+	jsonData, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "Failed parsing email and/or password"}
+		c.JSON(http.StatusBadRequest, result)
+		return
 	}
-	confirmPass = c.PostForm("confirm_password")
+	json.Unmarshal(jsonData, &userInput)
+	// a := string(jsonData)
+	// log.Printf("JSON: %s", a)
+	// log.Printf("userInput password: %s", userInput.Password)
 
 	phoneRegex := "^[0-9+]{8,13}$" //number only, with length of 8 - 13
 	re := regexp.MustCompile(phoneRegex)
 	_, errEmail := mail.ParseAddress(userInput.Email)
 	//validate input
-	if userInput.Name == "" || errEmail != nil || !re.MatchString(userInput.Telephone) || userInput.Address == "" || userInput.Company_name == "" || userInput.Password == "" || confirmPass == "" {
+	if userInput.Name == "" || errEmail != nil || !re.MatchString(userInput.Telephone) || userInput.Address == "" || userInput.Company_name == "" || userInput.Password == "" || userInput.ConfirmPass == "" {
 		result = gin.H{"status": "error", "msg": "Invalid inputs!"}
 		c.JSON(http.StatusBadRequest, result)
 		return
 	}
 
 	//match password
-	if userInput.Password != confirmPass {
+	if userInput.Password != userInput.ConfirmPass {
 		result = gin.H{"status": "error", "msg": "Password and confirm password input is not the same!"}
 		c.JSON(http.StatusBadRequest, result)
 		return

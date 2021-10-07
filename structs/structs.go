@@ -12,6 +12,7 @@ type User struct {
 	Address      string
 	Company_name string
 	Password     string `json:"password"`
+	ConfirmPass  string `json:"confirm_password"`
 	Created_date time.Time
 	Updated_date time.Time
 }
