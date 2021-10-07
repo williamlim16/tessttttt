@@ -8,4 +8,5 @@ import (
 type InDB struct {
 	DB          *gorm.DB
 	RedisClient *redis.Client
+	Middleware  bool
 }

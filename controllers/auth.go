@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
+	"net/mail"
+	"regexp"
+
+	// "net/url"
 	"strconv"
 	"time"
 	"trash-separator/structs"
@@ -70,12 +73,67 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 		c.SetCookie("user_address", user.Address, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
 		c.SetCookie("user_company", user.Company_name, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
 		c.SetCookie("user_telephone", user.Telephone, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
-		location := url.URL{Path: "/"}
-		c.Redirect(http.StatusFound, location.RequestURI())
+
+		//redirection handled by frontend
+		// location := url.URL{Path: "/"}
+		// c.Redirect(http.StatusFound, location.RequestURI())
+		result = gin.H{
+			"status": "success",
+			"msg":    "login successful",
+		}
+		c.JSON(http.StatusOK, result)
 
 	} else { //wrong password
 		result = gin.H{"status": "not authorized", "msg": "Invalid email and/or password combination"}
 		c.JSON(http.StatusUnauthorized, result)
+		return
+	}
+}
+
+func (idb *InDB) AuthRegister(c *gin.Context) {
+	var (
+		userInput   structs.User
+		confirmPass string
+
+		result gin.H
+	)
+	userInput = structs.User{
+		Name:         c.PostForm("name"),
+		Email:        c.PostForm("email"),
+		Telephone:    c.PostForm("telephone"),
+		Address:      c.PostForm("address"),
+		Company_name: c.PostForm("company_name"),
+		Password:     c.PostForm("password"),
+	}
+	confirmPass = c.PostForm("confirm_password")
+
+	phoneRegex := "^[0-9]{8,13}$" //number only, with length of 8 - 13
+	re := regexp.MustCompile(phoneRegex)
+	_, errEmail := mail.ParseAddress(userInput.Email)
+	//validate input
+	if userInput.Name == "" || errEmail != nil || !re.MatchString(userInput.Telephone) || userInput.Address == "" || userInput.Company_name == "" || userInput.Password == "" || confirmPass == "" {
+		result = gin.H{"status": "error", "msg": "Invalid inputs!"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	//match password
+	if userInput.Password != confirmPass {
+		result = gin.H{"status": "error", "msg": "Password and confirm password input is not the same!"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	//push to db
+	resultInsertUser := idb.DB.Table("users").Create(&userInput)
+
+	if resultInsertUser.Error == nil {
+		result = gin.H{"status": "success", "msg": "Register successful, please redirect user"}
+		c.JSON(http.StatusOK, result)
+		return
+	} else {
+		result = gin.H{"status": "error", "msg": fmt.Sprintf("internal db error in insert user, error: %v", resultInsertUser.Error.Error())}
+		c.JSON(http.StatusInternalServerError, result)
 		return
 	}
 }
