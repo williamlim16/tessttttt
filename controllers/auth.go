@@ -107,9 +107,7 @@ func (idb *InDB) AuthRegister(c *gin.Context) {
 
 		result gin.H
 	)
-	type emailList struct {
-		email string
-	}
+
 	userInput = structs.User{
 		Name:         c.PostForm("name"),
 		Email:        c.PostForm("email"),

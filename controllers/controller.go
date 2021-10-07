@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -296,6 +297,7 @@ func (idb *InDB) GetTopTrashCans(c *gin.Context) {
 	firstDayOfWeek := util.WeekStart(year, week)
 	userId = getUserIdFromRedis(idb, c)
 
+	log.Printf("User id : %s", userId)
 	resultGetTopTrashCans := idb.DB.Table("trash_reading").
 		Select("trash.trash_code AS Trash_sorter_name, trash.location AS Trash_sorter_location, count(*) as Total").
 		Joins("left join trash on trash.id = trash_reading.trash_id").
@@ -339,5 +341,5 @@ func getUserIdFromRedis(idb *InDB, c *gin.Context) string {
 	}
 	user := structs.User{}
 	json.Unmarshal([]byte(redisResp), &user)
-	return user.Name
+	return strconv.Itoa(user.Id)
 }
