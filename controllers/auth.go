@@ -41,10 +41,10 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, result)
 		return
 	}
-
 	json.Unmarshal(jsonData, &tempUser)
 	email = tempUser.Email
 	password = tempUser.Password
+	// log.Printf("email: %s, password: %s", email, password)
 
 	resultQueryUser := idb.DB.Table("user").Select("*").Where("email = ?", email).First(&user)
 	if resultQueryUser.Error != nil { //some error

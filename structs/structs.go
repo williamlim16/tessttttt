@@ -6,12 +6,12 @@ import "time"
 
 type User struct {
 	Id           int
-	Name         string
-	Email        string
+	Name         string `json:"name"`
+	Email        string `json:"email"`
 	Telephone    string
 	Address      string
 	Company_name string
-	Password     string
+	Password     string `json:"password"`
 	Created_date time.Time
 	Updated_date time.Time
 }
