@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 	"trash-separator/structs"
 
@@ -31,7 +33,7 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, result)
 		return
 	}
-	resultQueryUser := idb.DB.Table("user").Select("name, email, password").Where("email = ?", email).First(&user)
+	resultQueryUser := idb.DB.Table("user").Select("*").Where("email = ?", email).First(&user)
 	if resultQueryUser.Error != nil { //some error
 		if resultQueryUser.Error == gorm.ErrRecordNotFound { //got no record from db
 			result = gin.H{"status": "not authorized", "msg": "Invalid email and/or password combination"}
@@ -47,9 +49,15 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 	if user.Password == password { //same password
 		//create random token
 		userToken = randToken()
-		//put into redis, with expiry of 14 days. [key = token, value = 1(valid), 0(invalid)]
+		//put into redis, with expiry of 14 days. [key = token, value = user Struct]
 		log.Printf("usertoken = %s", userToken)
-		redisError := idb.RedisClient.Set(userToken, 1, time.Hour*24*14)
+		userJSON, err := json.Marshal(user)
+		if err != nil {
+			result = gin.H{"status": "error", "msg": fmt.Sprintf("Error parsing user into JSON, user: %v", user)}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		redisError := idb.RedisClient.Set(userToken, userJSON, time.Hour*24*14)
 		if redisError.Err() != nil {
 			result = gin.H{"status": "error", "msg": fmt.Sprintf("Internal Redis DB error, error: %v", redisError.Err().Error())}
 			c.JSON(http.StatusInternalServerError, result)
@@ -57,6 +65,11 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 		}
 		//put into user cookie then redirect
 		c.SetCookie("user_token", userToken, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
+		c.SetCookie("user_id", strconv.Itoa(user.Id), 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
+		c.SetCookie("user_name", user.Name, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
+		c.SetCookie("user_address", user.Address, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
+		c.SetCookie("user_company", user.Company_name, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
+		c.SetCookie("user_telephone", user.Telephone, 3600*24*14, "/", c.Request.URL.Hostname(), false, true)
 		location := url.URL{Path: "/"}
 		c.Redirect(http.StatusFound, location.RequestURI())
 
