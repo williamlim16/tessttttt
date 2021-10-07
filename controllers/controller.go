@@ -333,6 +333,7 @@ func (idb *InDB) GetTopTrashCans(c *gin.Context) {
 	}
 
 }
+
 func getUserIdFromRedis(idb *InDB, c *gin.Context) string {
 	userToken, _ := c.Cookie("user_token")
 	redisResp, err := idb.RedisClient.Get(userToken).Result()

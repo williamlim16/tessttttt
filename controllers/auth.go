@@ -188,3 +188,26 @@ func (idb *InDB) NotImplemented(c *gin.Context) {
 	res := gin.H{"status": "not implemented", "msg": "not implemented"}
 	c.JSON(http.StatusOK, res)
 }
+
+func (idb *InDB) CheckAuth(c *gin.Context) {
+	var res gin.H
+	var err error
+	userToken, err := c.Cookie("user_token")
+	if err != nil {
+		res = gin.H{
+			"status": "unauthorized",
+		}
+		c.JSON(http.StatusUnauthorized, res)
+	}
+	_, err = idb.RedisClient.Get(userToken).Result()
+	if err != nil {
+		res = gin.H{
+			"status": "unauthorized",
+		}
+		c.JSON(http.StatusUnauthorized, res)
+	}
+	res = gin.H{
+		"status": "logged in",
+	}
+	c.JSON(http.StatusOK, res)
+}
