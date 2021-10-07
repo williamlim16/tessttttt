@@ -12,8 +12,8 @@ type User struct {
 	Address      string
 	Company_name string
 	Password     string
-	Created_at   time.Time
-	Updated_at   time.Time
+	Created_date time.Time
+	Updated_date time.Time
 }
 
 type Trash_version struct {

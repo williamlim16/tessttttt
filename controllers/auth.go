@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/mail"
@@ -28,14 +29,23 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 		result    gin.H
 	)
 
-	email = c.PostForm("email")
-	password = c.PostForm("password")
+	tempUser := structs.User{}
+	jsonData, err := ioutil.ReadAll(c.Request.Body)
 
-	if email == "" || password == "" {
+	// email = c.PostForm("email")
+	// password = c.PostForm("password")
+
+	// if email == "" || password == "" {
+	if err != nil {
 		result = gin.H{"status": "error", "msg": "Failed parsing email and/or password"}
 		c.JSON(http.StatusBadRequest, result)
 		return
 	}
+
+	json.Unmarshal(jsonData, &tempUser)
+	email = tempUser.Email
+	password = tempUser.Password
+
 	resultQueryUser := idb.DB.Table("user").Select("*").Where("email = ?", email).First(&user)
 	if resultQueryUser.Error != nil { //some error
 		if resultQueryUser.Error == gorm.ErrRecordNotFound { //got no record from db
@@ -97,6 +107,9 @@ func (idb *InDB) AuthRegister(c *gin.Context) {
 
 		result gin.H
 	)
+	type emailList struct {
+		email string
+	}
 	userInput = structs.User{
 		Name:         c.PostForm("name"),
 		Email:        c.PostForm("email"),
@@ -107,7 +120,7 @@ func (idb *InDB) AuthRegister(c *gin.Context) {
 	}
 	confirmPass = c.PostForm("confirm_password")
 
-	phoneRegex := "^[0-9]{8,13}$" //number only, with length of 8 - 13
+	phoneRegex := "^[0-9+]{8,13}$" //number only, with length of 8 - 13
 	re := regexp.MustCompile(phoneRegex)
 	_, errEmail := mail.ParseAddress(userInput.Email)
 	//validate input
@@ -124,8 +137,27 @@ func (idb *InDB) AuthRegister(c *gin.Context) {
 		return
 	}
 
+	//check if email already has account or no
+	resultEmails, err := idb.DB.Table("user").Select("email").Rows()
+	if err != nil {
+		result = gin.H{"status": "error", "msg": fmt.Sprintf("internal db error: %v", err)}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer resultEmails.Close()
+	for resultEmails.Next() {
+		var dbEmail string
+		resultEmails.Scan(&dbEmail)
+		if dbEmail == userInput.Email {
+			result = gin.H{"status": "error", "msg": "This email is already registered!"}
+			c.JSON(http.StatusBadRequest, result)
+			return
+		}
+	}
 	//push to db
-	resultInsertUser := idb.DB.Table("users").Create(&userInput)
+	userInput.Created_date = time.Now()
+	userInput.Updated_date = time.Now()
+	resultInsertUser := idb.DB.Table("user").Create(&userInput)
 
 	if resultInsertUser.Error == nil {
 		result = gin.H{"status": "success", "msg": "Register successful, please redirect user"}

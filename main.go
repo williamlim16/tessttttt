@@ -5,19 +5,14 @@ import (
 	"trash-separator/controllers"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
-
-type InDB struct {
-	DB *gorm.DB
-}
 
 func main() {
 	db := config.DBInit()
 	client := config.RedisInit()
 
 	inDB := &controllers.InDB{DB: db, RedisClient: client}
-	// inDB.EnableMiddleware()
+	//inDB.EnableMiddleware()
 
 	router := gin.Default()
 

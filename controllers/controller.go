@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -286,18 +287,21 @@ func (idb *InDB) GetTopTrashCans(c *gin.Context) {
 		trashReading []structs.TrashReading
 		status       string
 		msg          string
+		userId       string
 		result       gin.H
 	)
 
 	tn := time.Now()
 	year, week := tn.ISOWeek()
 	firstDayOfWeek := util.WeekStart(year, week)
+	userId = getUserIdFromRedis(idb, c)
 
 	resultGetTopTrashCans := idb.DB.Table("trash_reading").
 		Select("trash.trash_code AS Trash_sorter_name, trash.location AS Trash_sorter_location, count(*) as Total").
 		Joins("left join trash on trash.id = trash_reading.trash_id").
 		Group("trash.id").
 		Where("trash_reading.created_date BETWEEN ? AND ?", firstDayOfWeek, tn).
+		Where("trash.user_id = ?", userId).
 		Order("Total desc").
 		Limit(5).
 		Find(&trashReading)
@@ -307,16 +311,17 @@ func (idb *InDB) GetTopTrashCans(c *gin.Context) {
 		msg = "Successfully get current week data"
 
 		result = gin.H{
-			"data":   trashReading,
-			"status": status,
-			"msg":    msg,
+			"user_id": userId,
+			"data":    trashReading,
+			"status":  status,
+			"msg":     msg,
 		}
 
 		c.JSON(http.StatusOK, result)
 
 	} else {
 		status = "error"
-		msg = resultGetTopTrashCans.Error.Error()
+		msg = fmt.Sprintf("db error: %v", resultGetTopTrashCans.Error.Error())
 		result = gin.H{
 			"status": status,
 			"msg":    msg,
@@ -325,4 +330,14 @@ func (idb *InDB) GetTopTrashCans(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, result)
 	}
 
+}
+func getUserIdFromRedis(idb *InDB, c *gin.Context) string {
+	userToken, _ := c.Cookie("user_token")
+	redisResp, err := idb.RedisClient.Get(userToken).Result()
+	if err != nil {
+		return ""
+	}
+	user := structs.User{}
+	json.Unmarshal([]byte(redisResp), &user)
+	return user.Name
 }

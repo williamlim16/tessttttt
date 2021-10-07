@@ -1,6 +1,8 @@
 package util
 
-import "time"
+import (
+	"time"
+)
 
 func WeekStart(year, week int) time.Time {
 	// Start from the middle of the year:
