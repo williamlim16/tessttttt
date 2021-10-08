@@ -493,6 +493,95 @@ func (idb *InDB) GetTrashTypeWeek(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+func (idb *InDB) GetTrashTypeAllByUser(c *gin.Context) {
+	var (
+		chartData map[time.Time]map[string]int
+		resp      []structs.TypeChartResponse
+		userId    string
+		msg       string
+		status    string
+		err       error
+		result    gin.H
+	)
+	chartData = make(map[time.Time]map[string]int)
+
+	userId = getUserIdFromRedis(idb, c)
+
+	tn := time.Now()
+	rounded := time.Date(tn.Year(), tn.Month(), tn.Day(), tn.Hour()+1, 0, 0, 0, tn.Location())
+	rPrevWeek := rounded.AddDate(0, 0, -7)
+
+	rows, err := idb.DB.Table("trash_reading").
+		Select("trash_reading.*").
+		Joins("left join trash on trash.id = trash_reading.trash_id").
+		Where("trash_reading.created_date BETWEEN ? AND ?", rPrevWeek, rounded).
+		Where("trash.user_id = ?", userId).Rows()
+	if err != nil {
+		result = gin.H{"status": "error", "msg": fmt.Sprintf("internal db error: %v", err)}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			reading         structs.Trash_reading
+			roundedNextHour time.Time
+			t               time.Time
+		)
+		idb.DB.ScanRows(rows, &reading)
+
+		if idb.DB.Error != nil {
+			result = gin.H{"status": "error", "msg": "internal db error"}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		t = reading.Created_date
+		roundedNextHour = time.Date(t.Year(), t.Month(), t.Day(), t.Hour()+1, 0, 0, 0, t.Location())
+		if chartData[roundedNextHour] == nil {
+			chartData[roundedNextHour] = make(map[string]int)
+		}
+		chartData[roundedNextHour][reading.Type]++
+	}
+
+	//create response
+	resp = []structs.TypeChartResponse{}
+	types := make(map[string]bool)
+	//fill missing hours
+	for rPrevWeek.Before(tn) {
+		tempResp := structs.TypeChartResponse{}
+		if chartData[rPrevWeek] == nil {
+			chartData[rPrevWeek] = make(map[string]int)
+		}
+		tempResp.Created_date = rPrevWeek
+		for key, val := range chartData[rPrevWeek] {
+			temp := make(map[string]string)
+			temp["name"] = key
+			temp["value"] = strconv.Itoa(val)
+			types[key] = true
+			tempResp.Data_type = append(tempResp.Data_type, temp)
+		}
+		resp = append(resp, tempResp)
+
+		rPrevWeek = rPrevWeek.Add(time.Hour)
+	}
+	var typeArr []string
+	for key, _ := range types {
+		typeArr = append(typeArr, key)
+	}
+
+	status = "fetch chart by user ok"
+	msg = "ok"
+	result = gin.H{
+		"status":         status,
+		"msg":            msg,
+		"data":           resp,
+		"type_available": typeArr,
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 func (idb *InDB) GetAllTrashCanByUser(c *gin.Context) {
 	var (
 		trashCans []structs.Trash
