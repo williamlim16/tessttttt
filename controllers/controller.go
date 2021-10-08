@@ -457,7 +457,7 @@ func (idb *InDB) GetTrashTypeWeek(c *gin.Context) {
 
 	//create response
 	resp = []structs.TypeChartResponse{}
-
+	types := make(map[string]bool)
 	//fill missing hours
 	for rPrevWeek.Before(tn) {
 		tempResp := structs.TypeChartResponse{}
@@ -469,18 +469,25 @@ func (idb *InDB) GetTrashTypeWeek(c *gin.Context) {
 			temp := make(map[string]string)
 			temp["name"] = key
 			temp["value"] = strconv.Itoa(val)
+			types[key] = true
 			tempResp.Data_type = append(tempResp.Data_type, temp)
 		}
 		resp = append(resp, tempResp)
 
 		rPrevWeek = rPrevWeek.Add(time.Hour)
 	}
-	status = "fetch summary ok"
+	var typeArr []string
+	for key, _ := range types {
+		typeArr = append(typeArr, key)
+	}
+
+	status = "fetch chart ok"
 	msg = "ok"
 	result = gin.H{
-		"status": status,
-		"msg":    msg,
-		"data":   resp,
+		"status":         status,
+		"msg":            msg,
+		"data":           resp,
+		"type_available": typeArr,
 	}
 
 	c.JSON(http.StatusOK, result)
