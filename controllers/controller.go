@@ -460,18 +460,18 @@ func (idb *InDB) GetTrashTypeWeek(c *gin.Context) {
 
 	//fill missing hours
 	for rPrevWeek.Before(tn) {
-		temp := structs.TypeChartResponse{
-			Data_type: make(map[string]string),
-		}
+		tempResp := structs.TypeChartResponse{}
 		if chartData[rPrevWeek] == nil {
 			chartData[rPrevWeek] = make(map[string]int)
 		}
-		temp.Created_date = rPrevWeek
+		tempResp.Created_date = rPrevWeek
 		for key, val := range chartData[rPrevWeek] {
-			temp.Data_type["name"] = key
-			temp.Data_type["value"] = strconv.Itoa(val)
+			temp := make(map[string]string)
+			temp["name"] = key
+			temp["value"] = strconv.Itoa(val)
+			tempResp.Data_type = append(tempResp.Data_type, temp)
 		}
-		resp = append(resp, temp)
+		resp = append(resp, tempResp)
 
 		rPrevWeek = rPrevWeek.Add(time.Hour)
 	}

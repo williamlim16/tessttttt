@@ -87,5 +87,5 @@ type TypeChart struct {
 
 type TypeChartResponse struct {
 	Created_date time.Time
-	Data_type    map[string]string
+	Data_type    []map[string]string
 }
