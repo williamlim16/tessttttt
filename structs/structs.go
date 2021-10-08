@@ -75,3 +75,8 @@ type TrashReading struct {
 	Trash_sorter_location string
 	Total                 int
 }
+
+type SummaryResponse struct {
+	Type     map[string]int
+	Category map[string]int
+}

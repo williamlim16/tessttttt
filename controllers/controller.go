@@ -334,6 +334,72 @@ func (idb *InDB) GetTopTrashCans(c *gin.Context) {
 
 }
 
+func (idb *InDB) GetTrashSummaryWeek(c *gin.Context) {
+	var (
+		resp             structs.SummaryResponse
+		trashCanID       int
+		trashCanIDString string
+		msg              string
+		status           string
+		err              error
+		result           gin.H
+	)
+	resp = structs.SummaryResponse{
+		Type:     make(map[string]int),
+		Category: make(map[string]int),
+	}
+	resp.Category["inorganic"] = 0
+	resp.Category["organic"] = 0
+
+	trashCanIDString = c.Param("trash_can_id")
+	trashCanID, err = strconv.Atoi(trashCanIDString)
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "invalid trash id format"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	tn := time.Now()
+	year, week := tn.ISOWeek()
+	firstDayOfWeek := util.WeekStart(year, week)
+
+	rows, err := idb.DB.Table("trash_reading").
+		Select("*").
+		Where("created_date BETWEEN ? AND ?", firstDayOfWeek, tn).
+		Where("trash_id = ?", trashCanID).Rows()
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "internal db error"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var reading structs.Trash_reading
+		idb.DB.ScanRows(rows, &reading)
+
+		if idb.DB.Error != nil {
+			result = gin.H{"status": "error", "msg": "internal db error"}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		resp.Category[reading.Category]++
+		resp.Type[reading.Type]++
+	}
+	status = "fetch summary ok"
+	msg = "ok"
+	if resp.Category["inorganic"]+resp.Category["organic"] == 0 {
+		msg = "empty logs"
+	}
+	result = gin.H{
+		"status": status,
+		"msg":    msg,
+		"data":   resp,
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 func (idb *InDB) GetAllTrashCanByUser(c *gin.Context) {
 	var (
 		trashCans []structs.Trash
