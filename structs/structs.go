@@ -28,7 +28,7 @@ type Trash struct {
 	Id                     int
 	Trash_code             string
 	Assigned               string
-	Created_at             time.Time
+	Created_date           time.Time
 	Assigned_date          time.Time
 	User_id                int
 	Latitude               string
@@ -36,6 +36,7 @@ type Trash struct {
 	Location               string
 	Guarantee_expired_date string
 	Trash_version_id       int
+	Custom_name            string
 }
 
 type Trash_capacity struct {

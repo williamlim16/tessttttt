@@ -334,11 +334,58 @@ func (idb *InDB) GetTopTrashCans(c *gin.Context) {
 
 }
 
+func (idb *InDB) GetAllTrashCanByUser(c *gin.Context) {
+	var (
+		trashCans []structs.Trash
+		status    string
+		msg       string
+		userId    string
+		result    gin.H
+	)
+
+	userId = getUserIdFromRedis(idb, c)
+
+	rows, err := idb.DB.Table("trash").
+		Select("*").
+		Where("user_id = ?", userId).Rows()
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "internal db error"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var reading structs.Trash
+		idb.DB.ScanRows(rows, &reading)
+
+		if idb.DB.Error != nil {
+			result = gin.H{"status": "error", "msg": "internal db error"}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		trashCans = append(trashCans, reading)
+	}
+
+	status = "fetch log ok"
+	msg = "ok"
+	if len(trashCans) == 0 {
+		msg = "empty logs"
+	}
+	result = gin.H{
+		"status": status,
+		"msg":    msg,
+		"data":   trashCans,
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 func getUserIdFromRedis(idb *InDB, c *gin.Context) string {
 	userToken, _ := c.Cookie("user_token")
 	redisResp, err := idb.RedisClient.Get(userToken).Result()
 	if err != nil {
-		return ""
+		return "2" //placeholder
 	}
 	user := structs.User{}
 	json.Unmarshal([]byte(redisResp), &user)

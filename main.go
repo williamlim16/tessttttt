@@ -27,11 +27,13 @@ func main() {
 	router.GET("/node/getLogs/", inDB.MWCheckUserTokenCookie(), inDB.GetAllTrashCanLogs)
 	router.GET("/node/getLogs/:trash_can_id", inDB.MWCheckUserTokenCookie(), inDB.GetSingleTrashCanLogs)
 
+	router.GET("/trash/getTrashCans/", inDB.MWCheckUserTokenCookie(), inDB.GetAllTrashCanByUser)
+
 	// Authentication
 	router.POST("/api/login", inDB.AuthLogin)
 	router.POST("/api/register", inDB.AuthRegister)
-	router.GET("/", inDB.NotImplemented)
 	router.POST("/api/checkLogin", inDB.CheckAuth)
+	router.GET("/", inDB.NotImplemented)
 
 	router.Run("localhost:8888")
 }
