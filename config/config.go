@@ -30,6 +30,7 @@ func DBInit() *gorm.DB {
 	})
 
 	if err != nil {
+		log.Printf("%v", err)
 		panic("failed to connect to database")
 	}
 

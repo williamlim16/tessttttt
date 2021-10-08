@@ -398,6 +398,72 @@ func (idb *InDB) GetTrashSummaryWeek(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+func (idb *InDB) GetTrashTypeAllByUserSummary(c *gin.Context) {
+	var (
+		resp   structs.SummaryResponse
+		userId string
+		msg    string
+		status string
+		err    error
+		result gin.H
+	)
+	resp = structs.SummaryResponse{
+		Type:     make(map[string]int),
+		Category: make(map[string]int),
+	}
+	resp.Category["inorganic"] = 0
+	resp.Category["organic"] = 0
+
+	userId = getUserIdFromRedis(idb, c)
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "invalid trash id format"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	tn := time.Now()
+	tnPrevWeek := tn.AddDate(0, 0, -7)
+
+	rows, err := idb.DB.Table("trash_reading").
+		Select("trash_reading.*").
+		Joins("left join trash on trash.id = trash_reading.trash_id").
+		Where("trash_reading.created_date BETWEEN ? AND ?", tnPrevWeek, tn).
+		Where("trash.user_id = ?", userId).Rows()
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "internal db error"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var reading structs.Trash_reading
+		idb.DB.ScanRows(rows, &reading)
+
+		if idb.DB.Error != nil {
+			result = gin.H{"status": "error", "msg": "internal db error"}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		log.Printf(reading.Category)
+		resp.Category[reading.Category]++
+		resp.Type[reading.Type]++
+	}
+	status = "fetch summary ok"
+	msg = "ok"
+	if resp.Category["inorganic"]+resp.Category["organic"] == 0 {
+		msg = "empty logs"
+	}
+	result = gin.H{
+		"status": status,
+		"msg":    msg,
+		"data":   resp,
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 func (idb *InDB) GetTrashTypeWeek(c *gin.Context) {
 	var (
 		chartData        map[time.Time]map[string]int
