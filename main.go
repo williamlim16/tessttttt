@@ -38,6 +38,7 @@ func main() {
 	router.POST("/api/login", inDB.AuthLogin)
 	router.POST("/api/register", inDB.AuthRegister)
 	router.POST("/api/checkLogin", inDB.CheckAuth)
+	router.POST("/api/logout", inDB.AuthLogout)
 	router.GET("/", inDB.NotImplemented)
 
 	router.Run("localhost:8888")

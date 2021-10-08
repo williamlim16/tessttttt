@@ -211,3 +211,40 @@ func (idb *InDB) CheckAuth(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+func (idb *InDB) AuthLogout(c *gin.Context) {
+	// remove user_token from cookie
+	token, err := c.Cookie("user_token")
+	if err != nil {
+		//cookie is not there
+		res := gin.H{
+			"status": "logged out",
+			"msg":    "token not found",
+		}
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	c.SetCookie("user_token", "", 0, "/", c.Request.URL.Hostname(), false, true)
+	c.SetCookie("user_id", "", 0, "/", c.Request.URL.Hostname(), false, true)
+	c.SetCookie("user_name", "", 0, "/", c.Request.URL.Hostname(), false, true)
+	c.SetCookie("user_address", "", 0, "/", c.Request.URL.Hostname(), false, true)
+	c.SetCookie("user_company", "", 0, "/", c.Request.URL.Hostname(), false, true)
+	c.SetCookie("user_telephone", "", 0, "/", c.Request.URL.Hostname(), false, true)
+
+	// remove from redis
+	redisRes := idb.RedisClient.Del(token)
+	if redisRes.Err() != nil {
+		//error deleting
+		res := gin.H{
+			"status": "error",
+			"msg":    fmt.Sprintf("Redis database error: %v", redisRes.Err().Error()),
+		}
+		c.JSON(http.StatusInternalServerError, res)
+		return
+	}
+	res := gin.H{
+		"status": "logged out",
+		"msg":    "successfully logged out",
+	}
+	c.JSON(http.StatusOK, res)
+}
