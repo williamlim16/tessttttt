@@ -26,7 +26,10 @@ func main() {
 
 	router.GET("/node/getLogs/", inDB.MWCheckUserTokenCookie(), inDB.GetAllTrashCanLogs)
 	router.GET("/node/getLogs/:trash_can_id", inDB.MWCheckUserTokenCookie(), inDB.GetSingleTrashCanLogs)
+
+	// charts
 	router.GET("/node/getWeeklySummary/:trash_can_id", inDB.MWCheckUserTokenCookie(), inDB.GetTrashSummaryWeek)
+	router.GET("/node/getWeeklyTypes/:trash_can_id", inDB.MWCheckUserTokenCookie(), inDB.GetTrashTypeWeek)
 
 	router.GET("/trash/getTrashCans/", inDB.MWCheckUserTokenCookie(), inDB.GetAllTrashCanByUser)
 

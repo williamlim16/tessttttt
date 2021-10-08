@@ -80,3 +80,12 @@ type SummaryResponse struct {
 	Type     map[string]int
 	Category map[string]int
 }
+
+type TypeChart struct {
+	ChartKey map[time.Time]map[string]int
+}
+
+type TypeChartResponse struct {
+	Created_date time.Time
+	Data_type    map[string]string
+}

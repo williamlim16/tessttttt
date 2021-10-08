@@ -360,12 +360,11 @@ func (idb *InDB) GetTrashSummaryWeek(c *gin.Context) {
 	}
 
 	tn := time.Now()
-	year, week := tn.ISOWeek()
-	firstDayOfWeek := util.WeekStart(year, week)
+	tnPrevWeek := tn.AddDate(0, 0, -7)
 
 	rows, err := idb.DB.Table("trash_reading").
 		Select("*").
-		Where("created_date BETWEEN ? AND ?", firstDayOfWeek, tn).
+		Where("created_date BETWEEN ? AND ?", tnPrevWeek, tn).
 		Where("trash_id = ?", trashCanID).Rows()
 	if err != nil {
 		result = gin.H{"status": "error", "msg": "internal db error"}
@@ -391,6 +390,93 @@ func (idb *InDB) GetTrashSummaryWeek(c *gin.Context) {
 	if resp.Category["inorganic"]+resp.Category["organic"] == 0 {
 		msg = "empty logs"
 	}
+	result = gin.H{
+		"status": status,
+		"msg":    msg,
+		"data":   resp,
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+func (idb *InDB) GetTrashTypeWeek(c *gin.Context) {
+	var (
+		chartData        map[time.Time]map[string]int
+		resp             []structs.TypeChartResponse
+		trashCanID       int
+		trashCanIDString string
+		msg              string
+		status           string
+		err              error
+		result           gin.H
+	)
+	chartData = make(map[time.Time]map[string]int)
+
+	trashCanIDString = c.Param("trash_can_id")
+	trashCanID, err = strconv.Atoi(trashCanIDString)
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "invalid trash id format"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	tn := time.Now()
+	rounded := time.Date(tn.Year(), tn.Month(), tn.Day(), tn.Hour()+1, 0, 0, 0, tn.Location())
+	rPrevWeek := rounded.AddDate(0, 0, -7)
+
+	rows, err := idb.DB.Table("trash_reading").
+		Select("*").
+		Where("created_date BETWEEN ? AND ?", rPrevWeek, rounded).
+		Where("trash_id = ?", trashCanID).Rows()
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "internal db error"}
+		c.JSON(http.StatusInternalServerError, result)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			reading         structs.Trash_reading
+			roundedNextHour time.Time
+			t               time.Time
+		)
+		idb.DB.ScanRows(rows, &reading)
+
+		if idb.DB.Error != nil {
+			result = gin.H{"status": "error", "msg": "internal db error"}
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+		t = reading.Created_date
+		roundedNextHour = time.Date(t.Year(), t.Month(), t.Day(), t.Hour()+1, 0, 0, 0, t.Location())
+		if chartData[roundedNextHour] == nil {
+			chartData[roundedNextHour] = make(map[string]int)
+		}
+		chartData[roundedNextHour][reading.Type]++
+	}
+
+	//create response
+	resp = []structs.TypeChartResponse{}
+
+	//fill missing hours
+	for rPrevWeek.Before(tn) {
+		temp := structs.TypeChartResponse{
+			Data_type: make(map[string]string),
+		}
+		if chartData[rPrevWeek] == nil {
+			chartData[rPrevWeek] = make(map[string]int)
+		}
+		temp.Created_date = rPrevWeek
+		for key, val := range chartData[rPrevWeek] {
+			temp.Data_type["name"] = key
+			temp.Data_type["value"] = strconv.Itoa(val)
+		}
+		resp = append(resp, temp)
+
+		rPrevWeek = rPrevWeek.Add(time.Hour)
+	}
+	status = "fetch summary ok"
+	msg = "ok"
 	result = gin.H{
 		"status": status,
 		"msg":    msg,
