@@ -132,15 +132,8 @@ func (idb *InDB) AuthRegister(c *gin.Context) {
 	re := regexp.MustCompile(phoneRegex)
 	_, errEmail := mail.ParseAddress(userInput.Email)
 	//validate input
-	if userInput.Name == "" || errEmail != nil || !re.MatchString(userInput.Telephone) || userInput.Address == "" || userInput.Company_name == "" || userInput.Password == "" || userInput.ConfirmPass == "" {
+	if userInput.Name == "" || errEmail != nil || !re.MatchString(userInput.Telephone) || userInput.Address == "" || userInput.Company_name == "" || userInput.Password == "" {
 		result = gin.H{"status": "error", "msg": "Invalid inputs!"}
-		c.JSON(http.StatusBadRequest, result)
-		return
-	}
-
-	//match password
-	if userInput.Password != userInput.ConfirmPass {
-		result = gin.H{"status": "error", "msg": "Password and confirm password input is not the same!"}
 		c.JSON(http.StatusBadRequest, result)
 		return
 	}
