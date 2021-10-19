@@ -12,7 +12,7 @@ func main() {
 	client := config.RedisInit()
 
 	inDB := &controllers.InDB{DB: db, RedisClient: client}
-	//inDB.EnableMiddleware()
+	inDB.EnableMiddleware()
 
 	router := gin.Default()
 
@@ -41,6 +41,15 @@ func main() {
 	router.POST("/api/checkLogin", inDB.CheckAuth)
 	router.POST("/api/logout", inDB.AuthLogout)
 	router.GET("/", inDB.NotImplemented)
+
+	// Admin
+	router.Use(inDB.MWCheckUserTokenCookie())
+	{
+		router.GET("/api/getAllTrashVersion", inDB.GetAllTrashVersion)
+		router.POST("/api/addTrashVersion", inDB.AddTrashVersion)
+		router.PUT("/api/editTrashVersion/:trash_version_id", inDB.EditTrashVersion)
+		router.DELETE("/api/deleteTrashVersion/:trash_version_id", inDB.DeleteTrashVersion)
+	}
 
 	router.Run("localhost:8888")
 }

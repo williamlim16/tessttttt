@@ -23,6 +23,11 @@ type Trash_version struct {
 	Organic_max_height   int
 }
 
+// Prevent GORM from adding "s" at the end of `trash_version` table name.
+func (trash_version *Trash_version) TableName() string {
+	return "trash_version"
+}
+
 type Trash struct {
 	Id                     int
 	Trash_code             string

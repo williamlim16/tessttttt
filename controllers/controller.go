@@ -705,3 +705,222 @@ func getUserIdFromRedis(idb *InDB, c *gin.Context) string {
 	json.Unmarshal([]byte(redisResp), &user)
 	return strconv.Itoa(user.Id)
 }
+
+func (idb *InDB) GetAllTrashVersion(c *gin.Context) {
+	var (
+		trashVersion []structs.Trash_version
+		result       gin.H
+		status       string
+		msg          string
+	)
+
+	resultGetAllTrashVersion := idb.DB.Table("trash_version").Find(&trashVersion)
+
+	if resultGetAllTrashVersion.Error == nil {
+		status = "success"
+		msg = "Successfully get all data of trash version"
+
+		result = gin.H{
+			"status": status,
+			"msg":    msg,
+			"count":  resultGetAllTrashVersion.RowsAffected,
+			"data":   trashVersion,
+		}
+
+		c.JSON(http.StatusOK, result)
+
+	} else {
+		status = "error"
+		msg = resultGetAllTrashVersion.Error.Error()
+
+		result = gin.H{
+			"status": status,
+			"msg":    msg,
+		}
+		c.JSON(http.StatusInternalServerError, result)
+
+	}
+}
+
+func (idb *InDB) AddTrashVersion(c *gin.Context) {
+	var (
+		result gin.H
+		status string
+		msg    string
+	)
+
+	versionName := c.PostForm("version_name")
+	if versionName == "" {
+		result = gin.H{"status": "error", "msg": "invalid trash version name (empty string)"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	organicMaxHeight, err := strconv.Atoi(c.PostForm("organic_max"))
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "invalid max value"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	inorganicMaxHeight, err := strconv.Atoi(c.PostForm("inorganic_max"))
+	if err != nil {
+		result = gin.H{"status": "error", "msg": "invalid max value"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	insertTrashVersion := structs.Trash_version{
+		Version_name:         versionName,
+		Inorganic_max_height: inorganicMaxHeight,
+		Organic_max_height:   organicMaxHeight,
+	}
+
+	resultInsertTrashVersion := idb.DB.Table("trash_version").Create(&insertTrashVersion)
+
+	if resultInsertTrashVersion.Error == nil {
+		status = "success"
+		msg = "Trash version successfully added"
+
+		result = gin.H{
+			"status":  status,
+			"message": msg,
+		}
+
+		c.JSON(http.StatusOK, result)
+
+	} else {
+		status = "error"
+		msg = "Trash version insertion failed"
+
+		result = gin.H{
+			"status":  status,
+			"message": msg,
+		}
+
+		c.JSON(http.StatusInternalServerError, result)
+	}
+
+}
+
+func (idb *InDB) EditTrashVersion(c *gin.Context) {
+	var (
+		trashVersion structs.Trash_version
+		status       string
+		msg          string
+		result       gin.H
+	)
+
+	trashVersionID := c.Param("trash_version_id")
+
+	resultGetTrashVersion := idb.DB.Table("trash_version").
+		Where("trash_version.id = ?", trashVersionID).
+		First(&trashVersion)
+
+	if resultGetTrashVersion.Error == nil {
+
+		versionName := c.PostForm("version_name")
+		if versionName == "" {
+			result = gin.H{"status": "error", "msg": "invalid trash version name (empty string)"}
+			c.JSON(http.StatusBadRequest, result)
+			return
+		}
+
+		organicMax, err := strconv.Atoi(c.PostForm("organic_max"))
+		if err != nil {
+			result = gin.H{"status": "error", "msg": "invalid organic max value"}
+			c.JSON(http.StatusBadRequest, result)
+			return
+		}
+
+		inorganicMax, err := strconv.Atoi(c.PostForm("inorganic_max"))
+		if err != nil {
+			result = gin.H{"status": "error", "msg": "invalid inorganic max value"}
+			c.JSON(http.StatusBadRequest, result)
+			return
+		}
+
+		updateTrashVersion := structs.Trash_version{
+			Version_name:         versionName,
+			Organic_max_height:   organicMax,
+			Inorganic_max_height: inorganicMax,
+		}
+
+		resultUpdateTrashVersion := idb.DB.Model(&trashVersion).Updates(&updateTrashVersion)
+
+		if resultUpdateTrashVersion.Error == nil {
+			status = "success"
+			msg = "TrashVersionID " + trashVersionID + ", successfully updated"
+
+			result = gin.H{
+				"status": status,
+				"msg":    msg,
+			}
+
+			c.JSON(http.StatusOK, result)
+		} else {
+			status = "error"
+			msg = "Trash version update failed"
+			fmt.Println(resultUpdateTrashVersion.Error.Error())
+
+			result = gin.H{
+				"status": status,
+				"msg":    msg,
+			}
+
+			c.JSON(http.StatusInternalServerError, result)
+
+		}
+
+	} else {
+		status = "error"
+		// msg = resultGetTrashVersion.Error.Error()
+		msg = "Trash version doesn't exist"
+
+		result = gin.H{
+			"status": status,
+			"msg":    msg,
+		}
+
+		c.JSON(http.StatusInternalServerError, result)
+
+	}
+}
+
+func (idb *InDB) DeleteTrashVersion(c *gin.Context) {
+	var (
+		trashVersion structs.Trash_version
+		status       string
+		msg          string
+		result       gin.H
+	)
+
+	trashVersionID := c.Param("trash_version_id")
+
+	resultDeleteTrashVersion := idb.DB.Delete(&trashVersion, trashVersionID)
+
+	if resultDeleteTrashVersion.Error == nil {
+		status = "success"
+		msg = "Trash Version ID " + trashVersionID + ", successfully deleted"
+
+		result = gin.H{
+			"status": status,
+			"msg":    msg,
+		}
+
+		c.JSON(http.StatusOK, result)
+
+	} else {
+		status = "error"
+		msg = "Trash version deletion failed"
+		fmt.Println(resultDeleteTrashVersion.Error.Error())
+
+		result = gin.H{
+			"status": status,
+			"msg":    msg,
+		}
+
+		c.JSON(http.StatusInternalServerError, result)
+	}
+
+}
