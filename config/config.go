@@ -12,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const projectDirName = "api" // change to relevant project name
+const projectDirName = "trash-separator-api" // change to relevant project name
 
 func goDotEnvVariable(key string) string {
     projectName := regexp.MustCompile(`^(.*` + projectDirName + `)`)
