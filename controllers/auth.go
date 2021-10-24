@@ -18,6 +18,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (idb *InDB) AuthLogin(c *gin.Context) {
@@ -59,7 +61,7 @@ func (idb *InDB) AuthLogin(c *gin.Context) {
 		}
 	}
 
-	if user.Password == password { //same password
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil { //same password
 		//create random token
 		userToken = randToken()
 		//put into redis, with expiry of 14 days. [key = token, value = user Struct]
@@ -137,6 +139,15 @@ func (idb *InDB) AuthRegister(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, result)
 		return
 	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
+	if err != nil {
+        result = gin.H{"status": "error", "msg": "Password Hashing Failed!"}
+		c.JSON(http.StatusBadRequest, result)
+		return
+    }
+
+	userInput.Password = string(hashedPassword[:])
 
 	//check if email already has account or no
 	resultEmails, err := idb.DB.Table("user").Select("email").Rows()

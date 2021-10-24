@@ -4,12 +4,29 @@ import (
 	"log"
 	"os"
 	"time"
-
+	"regexp"
 	"github.com/go-redis/redis"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"github.com/joho/godotenv"
 )
+
+const projectDirName = "api" // change to relevant project name
+
+func goDotEnvVariable(key string) string {
+    projectName := regexp.MustCompile(`^(.*` + projectDirName + `)`)
+    currentWorkDirectory, _ := os.Getwd()
+    rootPath := projectName.Find([]byte(currentWorkDirectory))
+
+    err := godotenv.Load(string(rootPath) + `/.env`)
+  
+	if err != nil {
+	  log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
+  }
 
 // DBInit create connection to database
 func DBInit() *gorm.DB {
@@ -24,7 +41,7 @@ func DBInit() *gorm.DB {
 	)
 
 	// dns := "root:@(localhost)/trash_separator?charset=utf8&parseTime=True&loc=Local"
-	dns := "host=fanny.db.elephantsql.com port=5432 user=nckcqlju dbname=nckcqlju sslmode=disable password=dNBdEXEtLEQ6GAWLaCdPFH-iGJP9biV2"
+	dns := goDotEnvVariable("DATABASE_CREDS")
 	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{
 		Logger: newLogger,
 	})
@@ -44,8 +61,8 @@ func RedisInit() *redis.Client {
 		password string
 		database int
 	)
-	address = "localhost:6379"
-	password = ""
+	address = goDotEnvVariable("REDIS_ADDR")
+	password = goDotEnvVariable("REDIS_PASS")
 	database = 0
 
 	client = redis.NewClient(&redis.Options{
