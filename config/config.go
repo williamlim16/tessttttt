@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"time"
-	"regexp"
 	"github.com/go-redis/redis"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -12,14 +11,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const projectDirName = "trash-separator-api" // change to relevant project name
 
 func goDotEnvVariable(key string) string {
-    projectName := regexp.MustCompile(`^(.*` + projectDirName + `)`)
     currentWorkDirectory, _ := os.Getwd()
-    rootPath := projectName.Find([]byte(currentWorkDirectory))
 
-    err := godotenv.Load(string(rootPath) + `/.env`)
+    err := godotenv.Load(string(currentWorkDirectory) + `/.env`)
   
 	if err != nil {
 	  log.Fatalf("Error loading .env file")
