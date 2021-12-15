@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"trash-separator/config"
 	"trash-separator/controllers"
 	"github.com/gin-gonic/contrib/static"
