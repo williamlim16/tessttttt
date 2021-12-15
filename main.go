@@ -66,6 +66,11 @@ func main() {
 		router.PUT("/api/editTrashVersion/:trash_version_id", inDB.EditTrashVersion)
 		router.DELETE("/api/deleteTrashVersion/:trash_version_id", inDB.DeleteTrashVersion)
 	}
+	port := os.Getenv("PORT")
+    if port == "" {
+        port = "3000"
+    }
 
-	router.Run("localhost:8888")
+    router.Run(":" + port)
 }
+
