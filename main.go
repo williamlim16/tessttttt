@@ -3,7 +3,8 @@ package main
 import (
 	"trash-separator/config"
 	"trash-separator/controllers"
-
+	"github.com/gin-gonic/contrib/static"
+	
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,11 @@ func main() {
 	inDB.EnableMiddleware()
 
 	router := gin.Default()
+	// router_static := gin.Default()
+	// router_static.StaticFile("/public", "./public")
+	// router_static.Static("/static", "./public/static")
+	router.Use(static.Serve("/", static.LocalFile("./public", true)))
+	// router_static.Run(":8080")
 
 	// config := cors.DefaultConfig()
 	// config.AllowOrigins = []string{"https://williamlim.me","https://trash-separator-api.herokuapp.com"}
